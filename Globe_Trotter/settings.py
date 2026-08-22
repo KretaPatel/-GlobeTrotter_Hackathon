@@ -45,6 +45,7 @@ INSTALLED_APPS = [
 
     # Local apps
     'home',
+    'login',
 ]
 
 MIDDLEWARE = [
@@ -150,3 +151,5 @@ SIMPLE_JWT = {
 
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
 }
+
+AUTH_USER_MODEL = 'login.User'

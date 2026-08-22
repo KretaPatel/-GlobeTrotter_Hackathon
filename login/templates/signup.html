@@ -1,0 +1,71 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign up · GlobeTrotter</title>
+  <link rel="stylesheet" href="{% static 'login/css/auth.css' %}">
+</head>
+<body>
+  <div class="auth-card">
+    <h1>Create your account</h1>
+    <p class="subtitle">Start planning trips in minutes.</p>
+
+    <div id="error-box" class="error-box"></div>
+
+    <form id="signup-form">
+      <div class="field">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" required autocomplete="username">
+      </div>
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required autocomplete="email">
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required autocomplete="new-password">
+      </div>
+      <div class="field">
+        <label for="password2">Confirm password</label>
+        <input type="password" id="password2" name="password2" required autocomplete="new-password">
+      </div>
+      <button type="submit" class="btn-primary" id="signup-btn">Sign up</button>
+    </form>
+
+    <p class="switch-link">
+      Already have an account? <a href="{% url 'login:login-page' %}">Log in</a>
+    </p>
+  </div>
+
+  <script src="{% static 'login/js/auth.js' %}"></script>
+  <script>
+    if (isLoggedIn()) window.location.href = "/";
+
+    document.getElementById("signup-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      hideError("error-box");
+      const btn = document.getElementById("signup-btn");
+      btn.disabled = true;
+      btn.textContent = "Creating account...";
+
+      const payload = {
+        username: document.getElementById("username").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        password: document.getElementById("password").value,
+        password2: document.getElementById("password2").value,
+      };
+
+      try {
+        await registerUser(payload);
+        window.location.href = "/";
+      } catch (err) {
+        showError("error-box", err.message);
+        btn.disabled = false;
+        btn.textContent = "Sign up";
+      }
+    });
+  </script>
+</body>
+</html>
