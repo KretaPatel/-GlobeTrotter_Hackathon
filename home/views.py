@@ -66,6 +66,15 @@ class ItineraryItemViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return ItineraryItem.objects.filter(stop__trip__user=self.request.user)
 
+
+class TripExpenseViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = TripExpenseSerializer
+
+    def get_queryset(self):
+        return TripExpense.objects.filter(trip__user=self.request.user)
+
+
 # 7. City Search & Discovery
 
 

@@ -67,40 +67,97 @@
 
     <!-- TAB 2: Explore Cities & Activities -->
     <div id="view-cities" class="hidden space-y-6">
-      <div class="flex gap-4">
-        <input type="text" id="city-search-input" placeholder="Search cities or countries..." class="flex-1 p-3 border rounded-xl border-slate-300 focus:ring-2 focus:ring-blue-500">
-        <button onclick="searchCities()" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700">Search</button>
+      <div class="flex flex-col md:flex-row gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="flex-1">
+          <input type="text" id="city-search-input" placeholder="Search cities or countries (e.g. Paris, Tokyo, Italy)..." class="w-full p-3 border rounded-xl border-slate-300 focus:ring-2 focus:ring-blue-500 text-sm">
+        </div>
+        <div class="flex gap-3">
+          <select id="city-region-filter" onchange="searchCities()" class="p-3 border rounded-xl border-slate-300 text-sm focus:ring-2 focus:ring-blue-500">
+            <option value="">All Regions</option>
+            <option value="Europe">Europe</option>
+            <option value="Asia">Asia</option>
+            <option value="North America">North America</option>
+            <option value="South America">South America</option>
+            <option value="Africa">Africa</option>
+            <option value="Oceania">Oceania</option>
+          </select>
+          <button onclick="searchCities()" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 text-sm transition">Search</button>
+        </div>
       </div>
       <div id="cities-explore-grid" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
     </div>
 
     <!-- TAB 3: Budget Breakdown & Analytics Modal View -->
     <div id="budget-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-      <div class="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-6 shadow-2xl">
+      <div class="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
         <div class="flex justify-between items-center border-b pb-4">
-          <h3 class="text-xl font-bold text-slate-900">Trip Budget Breakdown</h3>
+          <div>
+            <h3 class="text-xl font-bold text-slate-900">Trip Budget & Cost Breakdown</h3>
+            <p class="text-xs text-slate-400">Track and manage your expenses across transport, stays, meals, and activities</p>
+          </div>
           <button onclick="closeModal('budget-modal')" class="text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
         </div>
+
+        <!-- Overbudget Alert Banner -->
+        <div id="budget-alert-banner" class="hidden p-3 rounded-xl text-sm font-semibold flex items-center justify-between"></div>
+
+        <!-- Financial Metrics -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-          <div class="bg-slate-50 p-3 rounded-xl">
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
             <span class="text-xs text-slate-400 block uppercase">Budget Limit</span>
             <span id="b-limit" class="text-lg font-bold text-slate-800">$0</span>
           </div>
-          <div class="bg-slate-50 p-3 rounded-xl">
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
             <span class="text-xs text-slate-400 block uppercase">Total Spent</span>
             <span id="b-spent" class="text-lg font-bold text-blue-600">$0</span>
           </div>
-          <div class="bg-slate-50 p-3 rounded-xl">
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
             <span class="text-xs text-slate-400 block uppercase">Remaining</span>
             <span id="b-remaining" class="text-lg font-bold text-green-600">$0</span>
           </div>
-          <div class="bg-slate-50 p-3 rounded-xl">
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
             <span class="text-xs text-slate-400 block uppercase">Avg / Day</span>
             <span id="b-daily" class="text-lg font-bold text-purple-600">$0</span>
           </div>
         </div>
-        <div class="h-64 flex justify-center items-center">
+
+        <!-- Chart -->
+        <div class="h-64 flex justify-center items-center bg-slate-50 rounded-2xl p-4">
           <canvas id="budgetChart"></canvas>
+        </div>
+
+        <!-- Quick Log Expense Form -->
+        <div class="border-t pt-4">
+          <h4 class="font-bold text-sm text-slate-800 mb-3">➕ Log New Expense</h4>
+          <form id="add-expense-form" class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <input type="hidden" id="expense-trip-id">
+            <select id="expense-category" class="p-2 border rounded-xl text-xs border-slate-300" required>
+              <option value="transport">Transport</option>
+              <option value="stay">Stay / Accommodation</option>
+              <option value="activities">Activities</option>
+              <option value="meals">Meals & Dining</option>
+              <option value="other">Other</option>
+            </select>
+            <input type="number" id="expense-amount" step="0.01" placeholder="Amount ($)" class="p-2 border rounded-xl text-xs border-slate-300" required>
+            <input type="text" id="expense-note" placeholder="Note (e.g. Flight, Dinner)" class="p-2 border rounded-xl text-xs border-slate-300">
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold py-2">Add Expense</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- City Activities Modal -->
+    <div id="city-activities-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto">
+        <div class="flex justify-between items-center border-b pb-3">
+          <div>
+            <h3 id="modal-city-name" class="text-xl font-bold text-slate-900">Things to Do</h3>
+            <p id="modal-city-country" class="text-xs text-slate-400">Popular tourist activities & experiences</p>
+          </div>
+          <button onclick="closeModal('city-activities-modal')" class="text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
+        </div>
+        <div id="city-activities-list" class="space-y-3">
+          <p class="text-xs text-slate-400">Loading activities...</p>
         </div>
       </div>
     </div>
@@ -360,6 +417,7 @@
     // 5. Budget Breakdown & Chart.js
     async function viewBudget(tripId) {
       try {
+        document.getElementById("expense-trip-id").value = tripId;
         const res = await fetch(`/api/trips/${tripId}/budget/`, {
           headers: { "Authorization": `Bearer ${accessToken}` }
         });
@@ -370,6 +428,17 @@
         document.getElementById("b-remaining").textContent = `$${data.remaining_budget}`;
         document.getElementById("b-daily").textContent = `$${data.average_cost_per_day}`;
 
+        // Alert Banner
+        const alertBanner = document.getElementById("budget-alert-banner");
+        alertBanner.classList.remove("hidden", "bg-red-50", "text-red-700", "border-red-200", "bg-green-50", "text-green-700", "border-green-200");
+        if (data.is_overbudget) {
+          alertBanner.className = "p-3 rounded-xl text-sm font-semibold flex items-center justify-between bg-red-50 text-red-700 border border-red-200";
+          alertBanner.innerHTML = `<span>⚠️ <strong>Overbudget Alert:</strong> Total expenses exceed your limit by $${(data.total_spent - data.budget_limit).toFixed(2)}</span>`;
+        } else {
+          alertBanner.className = "p-3 rounded-xl text-sm font-semibold flex items-center justify-between bg-green-50 text-green-700 border border-green-200";
+          alertBanner.innerHTML = `<span>✅ <strong>Within Budget:</strong> You have $${data.remaining_budget.toFixed(2)} left.</span>`;
+        }
+
         // Render Chart
         const ctx = document.getElementById('budgetChart').getContext('2d');
         if (chartInstance) chartInstance.destroy();
@@ -377,7 +446,7 @@
         chartInstance = new Chart(ctx, {
           type: 'doughnut',
           data: {
-            labels: Object.keys(data.breakdown),
+            labels: Object.keys(data.breakdown).map(k => k.charAt(0).toUpperCase() + k.slice(1)),
             datasets: [{
               data: Object.values(data.breakdown),
               backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
@@ -385,7 +454,10 @@
           },
           options: {
             responsive: true,
-            maintainAspectRatio: false
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'bottom' }
+            }
           }
         });
 
@@ -395,26 +467,130 @@
       }
     }
 
+    // Quick Expense Logging Form
+    document.getElementById("add-expense-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const tripId = document.getElementById("expense-trip-id").value;
+      const payload = {
+        trip: tripId,
+        category: document.getElementById("expense-category").value,
+        amount: document.getElementById("expense-amount").value,
+        note: document.getElementById("expense-note").value,
+        expense_date: new Date().toISOString().split('T')[0]
+      };
+
+      await fetch("/api/expenses/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      document.getElementById("add-expense-form").reset();
+      viewBudget(tripId);
+      loadTripsList();
+    });
+
     // 6. City Explore & Discovery
     async function searchCities() {
       const q = document.getElementById("city-search-input").value;
-      const res = await fetch(`/api/cities/?search=${encodeURIComponent(q)}`);
+      const region = document.getElementById("city-region-filter") ? document.getElementById("city-region-filter").value : "";
+      
+      let url = `/api/cities/?search=${encodeURIComponent(q)}`;
+      if (region) url += `&region=${encodeURIComponent(region)}`;
+
+      const res = await fetch(url);
       const cities = await res.json();
       const grid = document.getElementById("cities-explore-grid");
 
+      if (!cities.length) {
+        grid.innerHTML = `<div class="col-span-full py-12 text-center bg-white border border-dashed rounded-2xl"><p class="text-slate-400">No destinations found matching "${q}".</p></div>`;
+        return;
+      }
+
       grid.innerHTML = cities.map(c => `
-        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-          <img src="${c.image_url || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828'}" class="h-32 w-full object-cover">
-          <div class="p-4 space-y-1">
-            <h4 class="font-bold text-slate-900">${c.name}</h4>
-            <p class="text-xs text-slate-400">${c.country} · ${c.region || 'Global'}</p>
-            <div class="flex justify-between items-center text-xs font-semibold text-blue-600 pt-2 border-t mt-3">
-              <span>Cost Index: ${c.cost_index || 1.0}x</span>
-              <span>⭐ ${c.popularity_score || 0}</span>
+        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm flex flex-col justify-between hover:shadow-md transition">
+          <div>
+            <img src="${c.image_url || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828'}" class="h-36 w-full object-cover">
+            <div class="p-4 space-y-1.5">
+              <div class="flex justify-between items-start">
+                <h4 class="font-bold text-slate-900 text-base">${c.name}</h4>
+                <span class="text-[11px] font-bold px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md">⭐ ${c.popularity_score || 50}</span>
+              </div>
+              <p class="text-xs text-slate-400 font-medium">${c.country} · ${c.region || 'Global'}</p>
+              <p class="text-xs text-slate-600 line-clamp-2 pt-1">${c.description || 'Discover monuments, local cuisine, and vibrant culture.'}</p>
+            </div>
+          </div>
+          <div class="p-4 pt-0 space-y-2">
+            <div class="flex justify-between items-center text-xs font-semibold text-slate-500 border-t pt-2.5">
+              <span>Cost Index: <strong class="text-slate-800">${c.cost_index || 1.0}x</strong></span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 pt-1">
+              <button onclick="exploreActivities(${c.id}, '${c.name}', '${c.country}')" class="w-full text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 py-2 rounded-xl transition text-center">
+                Activities &rarr;
+              </button>
+              <button onclick="quickAddCityToTrip(${c.id})" class="w-full text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 py-2 rounded-xl transition text-center">
+                + Add Stop
+              </button>
             </div>
           </div>
         </div>
       `).join('');
+    }
+
+    // 7. Activity Discovery Modal for a City
+    async function exploreActivities(cityId, cityName, country) {
+      document.getElementById("modal-city-name").textContent = `Activities in ${cityName}`;
+      document.getElementById("modal-city-country").textContent = `${country} · Local Tours & Attractions`;
+      const list = document.getElementById("city-activities-list");
+      list.innerHTML = `<p class="text-xs text-slate-400">Loading activities...</p>`;
+      openModal("city-activities-modal");
+
+      try {
+        const res = await fetch(`/api/activities/?city_id=${cityId}`);
+        const activities = await res.json();
+
+        if (!activities.length) {
+          list.innerHTML = `<p class="text-xs text-slate-400 italic py-6 text-center">No activities listed yet for this destination.</p>`;
+          return;
+        }
+
+        list.innerHTML = activities.map(a => `
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex gap-3 items-center">
+            <img src="${a.image_url || 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800'}" class="h-16 w-16 rounded-lg object-cover flex-shrink-0">
+            <div class="flex-1 min-w-0">
+              <div class="flex justify-between items-start">
+                <h5 class="font-bold text-sm text-slate-900 truncate">${a.title}</h5>
+                <span class="text-xs font-bold text-blue-600">$${a.cost}</span>
+              </div>
+              <p class="text-xs text-slate-500 line-clamp-1">${a.description || 'Local attraction and experience.'}</p>
+              <div class="flex gap-3 text-[10px] text-slate-400 font-medium mt-1">
+                <span class="capitalize">🏷️ ${a.category}</span>
+                <span>⏱️ ${a.duration_hours} hrs</span>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        list.innerHTML = `<p class="text-xs text-red-500">Failed to load activities.</p>`;
+      }
+    }
+
+    async function quickAddCityToTrip(cityId) {
+      // Switch to dashboard and open stop modal for first trip if available
+      switchTab('dashboard');
+      const res = await fetch("/api/trips/", {
+        headers: { "Authorization": `Bearer ${accessToken}` }
+      });
+      const trips = await res.json();
+      if (trips.length) {
+        await openStopModal(trips[0].id);
+        document.getElementById("stop-city").value = cityId;
+      } else {
+        openModal("create-trip-modal");
+      }
     }
 
     // Initial Load
