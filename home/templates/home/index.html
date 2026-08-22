@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GlobeTrotter · Travel Planner</title>
+  <!-- Tailwind CSS & Chart.js for Budget Analytics -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
+
+  <!-- Top Navbar -->
+  <nav class="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center sticky top-0 z-40 shadow-sm">
+    <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('dashboard')">
+      <span class="text-2xl">🌍</span>
+      <span class="text-xl font-black tracking-tight text-blue-600">GlobeTrotter</span>
+    </div>
+    <div class="flex items-center space-x-6">
+      <button onclick="switchTab('dashboard')" class="text-sm font-medium hover:text-blue-600 transition">Dashboard</button>
+      <button onclick="switchTab('cities')" class="text-sm font-medium hover:text-blue-600 transition">Explore Cities</button>
+      <button onclick="openModal('create-trip-modal')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition shadow-sm">
+        + Plan New Trip
+      </button>
+      <button id="logout-btn" class="border border-red-200 text-red-600 hover:bg-red-50 px-4 py-2 rounded-xl text-sm font-semibold transition">
+        Log out
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl w-full mx-auto px-6 py-8 flex-1 space-y-8">
+    
+    <!-- Dynamic Welcome Header -->
+    <div class="flex justify-between items-center bg-blue-600 text-white p-6 rounded-2xl shadow-sm">
+      <div>
+        <h1 id="welcome-msg" class="text-2xl font-black">Welcome to GlobeTrotter!</h1>
+        <p class="text-blue-100 text-sm mt-1">Design, budget, and organize your next journey.</p>
+      </div>
+      <div class="bg-blue-500/50 px-4 py-2 rounded-xl text-center">
+        <span class="text-xs uppercase tracking-wider text-blue-200 block">Total Trips</span>
+        <span id="total-trips-count" class="text-2xl font-bold">0</span>
+      </div>
+    </div>
+
+    <!-- TAB 1: Dashboard View -->
+    <div id="view-dashboard" class="space-y-10">
+      <!-- Recent Trips -->
+      <section>
+        <div class="flex justify-between items-center mb-5">
+          <h2 class="text-xl font-bold text-slate-900">Your Itineraries</h2>
+          <span class="text-xs text-slate-400 font-medium">Auto-updated</span>
+        </div>
+        <div id="trips-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <p class="text-slate-400 italic col-span-full">Loading your trips...</p>
+        </div>
+      </section>
+
+      <!-- Recommended Cities -->
+      <section>
+        <h2 class="text-xl font-bold text-slate-900 mb-5">Top Recommended Destinations</h2>
+        <div id="recommended-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <p class="text-slate-400 italic col-span-full">Loading destinations...</p>
+        </div>
+      </section>
+    </div>
+
+    <!-- TAB 2: Explore Cities & Activities -->
+    <div id="view-cities" class="hidden space-y-6">
+      <div class="flex gap-4">
+        <input type="text" id="city-search-input" placeholder="Search cities or countries..." class="flex-1 p-3 border rounded-xl border-slate-300 focus:ring-2 focus:ring-blue-500">
+        <button onclick="searchCities()" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700">Search</button>
+      </div>
+      <div id="cities-explore-grid" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+    </div>
+
+    <!-- TAB 3: Budget Breakdown & Analytics Modal View -->
+    <div id="budget-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-6 shadow-2xl">
+        <div class="flex justify-between items-center border-b pb-4">
+          <h3 class="text-xl font-bold text-slate-900">Trip Budget Breakdown</h3>
+          <button onclick="closeModal('budget-modal')" class="text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+          <div class="bg-slate-50 p-3 rounded-xl">
+            <span class="text-xs text-slate-400 block uppercase">Budget Limit</span>
+            <span id="b-limit" class="text-lg font-bold text-slate-800">$0</span>
+          </div>
+          <div class="bg-slate-50 p-3 rounded-xl">
+            <span class="text-xs text-slate-400 block uppercase">Total Spent</span>
+            <span id="b-spent" class="text-lg font-bold text-blue-600">$0</span>
+          </div>
+          <div class="bg-slate-50 p-3 rounded-xl">
+            <span class="text-xs text-slate-400 block uppercase">Remaining</span>
+            <span id="b-remaining" class="text-lg font-bold text-green-600">$0</span>
+          </div>
+          <div class="bg-slate-50 p-3 rounded-xl">
+            <span class="text-xs text-slate-400 block uppercase">Avg / Day</span>
+            <span id="b-daily" class="text-lg font-bold text-purple-600">$0</span>
+          </div>
+        </div>
+        <div class="h-64 flex justify-center items-center">
+          <canvas id="budgetChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Create Trip Modal -->
+  <div id="create-trip-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+      <h3 class="text-xl font-bold text-slate-900">Plan a New Journey</h3>
+      <form id="create-trip-form" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-600">Trip Name</label>
+          <input type="text" id="trip-name" required placeholder="e.g. Euro Trip 2026" class="w-full mt-1 p-2.5 border rounded-xl border-slate-300">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-600">Budget Limit ($)</label>
+          <input type="number" id="trip-budget" step="0.01" value="1000.00" class="w-full mt-1 p-2.5 border rounded-xl border-slate-300">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-600">Start Date</label>
+            <input type="date" id="trip-start" class="w-full mt-1 p-2.5 border rounded-xl border-slate-300">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-600">End Date</label>
+            <input type="date" id="trip-end" class="w-full mt-1 p-2.5 border rounded-xl border-slate-300">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-600">Description</label>
+          <textarea id="trip-desc" rows="2" class="w-full mt-1 p-2.5 border rounded-xl border-slate-300"></textarea>
+        </div>
+        <div class="flex justify-end space-x-3 pt-2">
+          <button type="button" onclick="closeModal('create-trip-modal')" class="px-4 py-2 border rounded-xl text-sm">Cancel</button>
+          <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl text-sm font-semibold">Save Trip</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Stop Modal -->
+  <div id="add-stop-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+      <h3 class="text-xl font-bold text-slate-900">Add City Stop</h3>
+      <form id="add-stop-form" class="space-y-4">
+        <input type="hidden" id="stop-trip-id">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-600">Destination City</label>
+          <select id="stop-city" required class="w-full mt-1 p-2.5 border rounded-xl border-slate-300"></select>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-600">Arrival</label>
+            <input type="date" id="stop-arrival" class="w-full mt-1 p-2.5 border rounded-xl border-slate-300">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-600">Departure</label>
+            <input type="date" id="stop-departure" class="w-full mt-1 p-2.5 border rounded-xl border-slate-300">
+          </div>
+        </div>
+        <div class="flex justify-end space-x-3 pt-2">
+          <button type="button" onclick="closeModal('add-stop-modal')" class="px-4 py-2 border rounded-xl text-sm">Cancel</button>
+          <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl text-sm font-semibold">Add Stop</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- App JavaScript Logic -->
+  <script>
+    const accessToken = localStorage.getItem("accessToken");
+    if (!accessToken) window.location.href = "/login/";
+
+    let chartInstance = null;
+    let availableCities = [];
+
+    // Tab Navigation
+    function switchTab(tab) {
+      document.getElementById('view-dashboard').classList.toggle('hidden', tab !== 'dashboard');
+      document.getElementById('view-cities').classList.toggle('hidden', tab !== 'cities');
+      if (tab === 'cities') searchCities();
+    }
+
+    // Modal Controls
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+      document.getElementById(id).classList.add('flex');
+    }
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+      document.getElementById(id).classList.remove('flex');
+    }
+
+    // Logout
+    document.getElementById("logout-btn").addEventListener("click", async () => {
+      const refreshToken = localStorage.getItem("refreshToken");
+      if (refreshToken) {
+        try {
+          await fetch("/login/api/logout/", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${accessToken}`
+            },
+            body: JSON.stringify({ refresh: refreshToken })
+          });
+        } catch (e) { console.error(e); }
+      }
+      localStorage.clear();
+      window.location.href = "/login/";
+    });
+
+    // 1. Fetch Dashboard & Recent Trips
+    async function loadDashboard() {
+      try {
+        const res = await fetch("/api/dashboard/", {
+          headers: { "Authorization": `Bearer ${accessToken}` }
+        });
+        if (res.status === 401) {
+          localStorage.clear();
+          window.location.href = "/login/";
+          return;
+        }
+        const data = await res.json();
+        
+        document.getElementById("welcome-msg").textContent = data.welcome_message;
+        document.getElementById("total-trips-count").textContent = data.summary.total_trips;
+
+        // Render Recommended Destinations
+        const recGrid = document.getElementById("recommended-grid");
+        recGrid.innerHTML = data.recommended_destinations.map(c => `
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+            <img src="${c.image_url || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828'}" class="h-20 w-full object-cover">
+            <div class="p-2.5">
+              <h4 class="font-bold text-xs text-slate-800 truncate">${c.name}</h4>
+              <p class="text-[10px] text-slate-400">${c.country}</p>
+            </div>
+          </div>
+        `).join('');
+
+        loadTripsList();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // 2. Fetch Full Trips
+    async function loadTripsList() {
+      try {
+        const res = await fetch("/api/trips/", {
+          headers: { "Authorization": `Bearer ${accessToken}` }
+        });
+        const trips = await res.json();
+        const grid = document.getElementById("trips-grid");
+
+        if (!trips.length) {
+          grid.innerHTML = `<div class="col-span-full py-12 text-center bg-white border border-dashed rounded-2xl"><p class="text-slate-400">No itineraries found. Start by planning your first trip!</p></div>`;
+          return;
+        }
+
+        grid.innerHTML = trips.map(t => `
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+            <img src="${t.cover_photo || 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800'}" class="h-36 w-full object-cover">
+            <div class="p-5 flex-1 flex flex-col justify-between space-y-4">
+              <div>
+                <h3 class="font-bold text-lg text-slate-900">${t.name}</h3>
+                <p class="text-xs text-slate-400">${t.start_date || 'TBD'} &rarr; ${t.end_date || 'TBD'}</p>
+                <p class="text-xs text-slate-600 mt-2 line-clamp-2">${t.description || 'No description.'}</p>
+              </div>
+
+              <!-- Stops List -->
+              <div class="bg-slate-50 rounded-xl p-3 space-y-2">
+                <div class="flex justify-between items-center text-xs font-semibold text-slate-500 uppercase">
+                  <span>Stops (${t.stops ? t.stops.length : 0})</span>
+                  <button onclick="openStopModal(${t.id})" class="text-blue-600 hover:underline">+ Add Stop</button>
+                </div>
+                <div class="space-y-1">
+                  ${t.stops && t.stops.length ? t.stops.map(s => `
+                    <div class="text-xs bg-white border border-slate-200 px-2 py-1 rounded flex justify-between">
+                      <span>📍 ${s.city_details ? s.city_details.name : 'City'}</span>
+                      <span class="text-slate-400">${s.itinerary_items ? s.itinerary_items.length : 0} items</span>
+                    </div>
+                  `).join('') : '<p class="text-xs text-slate-400 italic">No stops added yet.</p>'}
+                </div>
+              </div>
+
+              <!-- Actions & Budget -->
+              <div class="flex justify-between items-center border-t pt-3">
+                <button onclick="viewBudget(${t.id})" class="text-xs font-bold text-blue-600 hover:underline">View Budget & Chart &rarr;</button>
+                <span class="text-xs px-2.5 py-1 bg-slate-100 rounded-full font-semibold">Limit: $${t.budget_limit}</span>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // 3. Trip Creation
+    document.getElementById("create-trip-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const payload = {
+        name: document.getElementById("trip-name").value,
+        budget_limit: document.getElementById("trip-budget").value,
+        start_date: document.getElementById("trip-start").value || null,
+        end_date: document.getElementById("trip-end").value || null,
+        description: document.getElementById("trip-desc").value
+      };
+      await fetch("/api/trips/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`
+        },
+        body: JSON.stringify(payload)
+      });
+      closeModal("create-trip-modal");
+      document.getElementById("create-trip-form").reset();
+      loadDashboard();
+    });
+
+    // 4. City Stops Operations
+    async function openStopModal(tripId) {
+      document.getElementById("stop-trip-id").value = tripId;
+      if (!availableCities.length) {
+        const res = await fetch("/api/cities/");
+        availableCities = await res.json();
+      }
+      const select = document.getElementById("stop-city");
+      select.innerHTML = availableCities.map(c => `<option value="${c.id}">${c.name}, ${c.country}</option>`).join('');
+      openModal("add-stop-modal");
+    }
+
+    document.getElementById("add-stop-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const payload = {
+        trip: document.getElementById("stop-trip-id").value,
+        city: document.getElementById("stop-city").value,
+        arrival_date: document.getElementById("stop-arrival").value || null,
+        departure_date: document.getElementById("stop-departure").value || null
+      };
+      await fetch("/api/stops/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`
+        },
+        body: JSON.stringify(payload)
+      });
+      closeModal("add-stop-modal");
+      document.getElementById("add-stop-form").reset();
+      loadTripsList();
+    });
+
+    // 5. Budget Breakdown & Chart.js
+    async function viewBudget(tripId) {
+      try {
+        const res = await fetch(`/api/trips/${tripId}/budget/`, {
+          headers: { "Authorization": `Bearer ${accessToken}` }
+        });
+        const data = await res.json();
+
+        document.getElementById("b-limit").textContent = `$${data.budget_limit}`;
+        document.getElementById("b-spent").textContent = `$${data.total_spent}`;
+        document.getElementById("b-remaining").textContent = `$${data.remaining_budget}`;
+        document.getElementById("b-daily").textContent = `$${data.average_cost_per_day}`;
+
+        // Render Chart
+        const ctx = document.getElementById('budgetChart').getContext('2d');
+        if (chartInstance) chartInstance.destroy();
+
+        chartInstance = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: Object.keys(data.breakdown),
+            datasets: [{
+              data: Object.values(data.breakdown),
+              backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false
+          }
+        });
+
+        openModal("budget-modal");
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // 6. City Explore & Discovery
+    async function searchCities() {
+      const q = document.getElementById("city-search-input").value;
+      const res = await fetch(`/api/cities/?search=${encodeURIComponent(q)}`);
+      const cities = await res.json();
+      const grid = document.getElementById("cities-explore-grid");
+
+      grid.innerHTML = cities.map(c => `
+        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+          <img src="${c.image_url || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828'}" class="h-32 w-full object-cover">
+          <div class="p-4 space-y-1">
+            <h4 class="font-bold text-slate-900">${c.name}</h4>
+            <p class="text-xs text-slate-400">${c.country} · ${c.region || 'Global'}</p>
+            <div class="flex justify-between items-center text-xs font-semibold text-blue-600 pt-2 border-t mt-3">
+              <span>Cost Index: ${c.cost_index || 1.0}x</span>
+              <span>⭐ ${c.popularity_score || 0}</span>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Initial Load
+    loadDashboard();
+  </script>
+</body>
+</html>
