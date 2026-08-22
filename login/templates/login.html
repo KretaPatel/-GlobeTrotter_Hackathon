@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login · GlobeTrotter</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #f3f4f6; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .auth-card { background: #fff; padding: 2.5rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+    h1 { font-size: 1.5rem; margin-bottom: 0.5rem; color: #111827; }
+    .subtitle { color: #6b7280; font-size: 0.875rem; margin-bottom: 1.5rem; }
+    .field { margin-bottom: 1.25rem; }
+    label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem; color: #374151; }
+    input { width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
+    input:focus { outline: 2px solid #2563eb; border-color: transparent; }
+    .btn-primary { width: 100%; padding: 0.75rem; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .switch-link { text-align: center; font-size: 0.875rem; margin-top: 1.5rem; color: #6b7280; }
+    .switch-link a { color: #2563eb; text-decoration: none; font-weight: 500; }
+    .error-box { display: none; background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 0.75rem; border-radius: 6px; font-size: 0.875rem; margin-bottom: 1.25rem; }
+  </style>
+</head>
+<body>
+  <div class="auth-card">
+    <h1>Welcome back</h1>
+    <p class="subtitle">Log in to plan your next trip.</p>
+
+    <div id="error-box" class="error-box"></div>
+
+    <form id="login-form">
+      <div class="field">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" required autocomplete="username">
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn-primary" id="login-btn">Log in</button>
+    </form>
+
+    <p class="switch-link">
+      Don't have an account? <a href="{% url 'login:signup-page' %}">Sign up</a>
+    </p>
+  </div>
+
+  <script>
+    const token = localStorage.getItem("accessToken");
+    if (token) window.location.href = "/";
+
+    function showError(msg) {
+      const box = document.getElementById("error-box");
+      box.textContent = msg;
+      box.style.display = "block";
+    }
+
+    function hideError() {
+      document.getElementById("error-box").style.display = "none";
+    }
+
+    document.getElementById("login-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      hideError();
+      const btn = document.getElementById("login-btn");
+      btn.disabled = true;
+      btn.textContent = "Logging in...";
+
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
+
+      try {
+        const response = await fetch("{% url 'login:api-login' %}", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.detail || data.non_field_errors || "Invalid credentials.");
+        }
+
+        localStorage.setItem("accessToken", data.access);
+        localStorage.setItem("refreshToken", data.refresh);
+        window.location.href = "/";
+      } catch (err) {
+        showError(err.message);
+        btn.disabled = false;
+        btn.textContent = "Log in";
+      }
+    });
+  </script>
+</body>
+</html>
