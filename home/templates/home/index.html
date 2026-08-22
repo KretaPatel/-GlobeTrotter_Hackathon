@@ -67,6 +67,9 @@
 
     <!-- TAB 2: Explore Cities & Activities -->
     <div id="view-cities" class="hidden space-y-6">
+      <div class="flex gap-4">
+        <input type="text" id="city-search-input" placeholder="Search cities or countries..." class="flex-1 p-3 border rounded-xl border-slate-300 focus:ring-2 focus:ring-blue-500">
+        <button onclick="searchCities()" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700">Search</button>
       <div class="flex flex-col md:flex-row gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
         <div class="flex-1">
           <input type="text" id="city-search-input" placeholder="Search cities or countries (e.g. Paris, Tokyo, Italy)..." class="w-full p-3 border rounded-xl border-slate-300 focus:ring-2 focus:ring-blue-500 text-sm">
@@ -89,8 +92,10 @@
 
     <!-- TAB 3: Budget Breakdown & Analytics Modal View -->
     <div id="budget-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-6 shadow-2xl">
       <div class="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
         <div class="flex justify-between items-center border-b pb-4">
+          <h3 class="text-xl font-bold text-slate-900">Trip Budget Breakdown</h3>
           <div>
             <h3 class="text-xl font-bold text-slate-900">Trip Budget & Cost Breakdown</h3>
             <p class="text-xs text-slate-400">Track and manage your expenses across transport, stays, meals, and activities</p>
@@ -103,23 +108,28 @@
 
         <!-- Financial Metrics -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+          <div class="bg-slate-50 p-3 rounded-xl">
           <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
             <span class="text-xs text-slate-400 block uppercase">Budget Limit</span>
             <span id="b-limit" class="text-lg font-bold text-slate-800">$0</span>
           </div>
+          <div class="bg-slate-50 p-3 rounded-xl">
           <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
             <span class="text-xs text-slate-400 block uppercase">Total Spent</span>
             <span id="b-spent" class="text-lg font-bold text-blue-600">$0</span>
           </div>
+          <div class="bg-slate-50 p-3 rounded-xl">
           <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
             <span class="text-xs text-slate-400 block uppercase">Remaining</span>
             <span id="b-remaining" class="text-lg font-bold text-green-600">$0</span>
           </div>
+          <div class="bg-slate-50 p-3 rounded-xl">
           <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
             <span class="text-xs text-slate-400 block uppercase">Avg / Day</span>
             <span id="b-daily" class="text-lg font-bold text-purple-600">$0</span>
           </div>
         </div>
+        <div class="h-64 flex justify-center items-center">
 
         <!-- Chart -->
         <div class="h-64 flex justify-center items-center bg-slate-50 rounded-2xl p-4">
@@ -446,6 +456,7 @@
         chartInstance = new Chart(ctx, {
           type: 'doughnut',
           data: {
+            labels: Object.keys(data.breakdown),
             labels: Object.keys(data.breakdown).map(k => k.charAt(0).toUpperCase() + k.slice(1)),
             datasets: [{
               data: Object.values(data.breakdown),
@@ -454,6 +465,7 @@
           },
           options: {
             responsive: true,
+            maintainAspectRatio: false
             maintainAspectRatio: false,
             plugins: {
               legend: { position: 'bottom' }
@@ -496,6 +508,7 @@
     // 6. City Explore & Discovery
     async function searchCities() {
       const q = document.getElementById("city-search-input").value;
+      const res = await fetch(`/api/cities/?search=${encodeURIComponent(q)}`);
       const region = document.getElementById("city-region-filter") ? document.getElementById("city-region-filter").value : "";
       
       let url = `/api/cities/?search=${encodeURIComponent(q)}`;
@@ -511,6 +524,14 @@
       }
 
       grid.innerHTML = cities.map(c => `
+        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+          <img src="${c.image_url || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828'}" class="h-32 w-full object-cover">
+          <div class="p-4 space-y-1">
+            <h4 class="font-bold text-slate-900">${c.name}</h4>
+            <p class="text-xs text-slate-400">${c.country} · ${c.region || 'Global'}</p>
+            <div class="flex justify-between items-center text-xs font-semibold text-blue-600 pt-2 border-t mt-3">
+              <span>Cost Index: ${c.cost_index || 1.0}x</span>
+              <span>⭐ ${c.popularity_score || 0}</span>
         <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm flex flex-col justify-between hover:shadow-md transition">
           <div>
             <img src="${c.image_url || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828'}" class="h-36 w-full object-cover">
